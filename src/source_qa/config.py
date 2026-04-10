@@ -131,11 +131,16 @@ class Settings(BaseSettings):
         import toml
 
         if config_path is None:
-            config_path = Path(".kimi.toml")
+            # Try to find .kimi.toml in current directory or parent directories
+            config_path = Path(".kimi.toml").resolve()
+        else:
+            config_path = Path(config_path).resolve()
 
         if not config_path.exists():
+            print(f"[Config] Config file not found: {config_path}")
             return cls()
 
+        print(f"[Config] Loading from: {config_path}")
         config = toml.load(config_path)
         
         # Parse moonshot section
@@ -143,6 +148,7 @@ class Settings(BaseSettings):
         
         # Parse embedding section
         embedding_config = config.get("embedding", {})
+        print(f"[Config] Embedding config: {embedding_config}")
         
         # Parse indexing section
         indexing_config = config.get("indexing", {})
