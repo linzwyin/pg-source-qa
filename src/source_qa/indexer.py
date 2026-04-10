@@ -82,6 +82,9 @@ class CodeIndexer:
     def index_directory(self, directory: str | Path, clear_existing: bool = False) -> dict:
         """Index all supported files in a directory."""
         directory = Path(directory)
+        console.print(f"[blue]Starting indexing...[/blue]")
+        console.print(f"[dim]Directory: {directory.absolute()}[/dim]")
+        
         if not directory.exists():
             raise FileNotFoundError(f"Directory not found: {directory}")
 
@@ -96,6 +99,7 @@ class CodeIndexer:
             )
 
         # Collect all files
+        console.print("[dim]Scanning for files...[/dim]")
         files = list(self.iter_files(
             directory,
             settings.supported_extensions,

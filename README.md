@@ -13,24 +13,59 @@
 
 ## 技术栈
 
-| 组件 | 技术 |
-|------|------|
-| **LLM** | Moonshot Kimi K2 |
-| **RAG** | LlamaIndex |
-| **向量库** | ChromaDB |
-| **代码解析** | Tree-sitter (C grammar) |
-| **PDF 解析** | PyMuPDF + pdfplumber |
-| **嵌入模型** | BGE-large |
-| **Web UI** | Streamlit / Gradio |
-| **API** | FastAPI |
+| 组件 | 技术 | CPU/GPU |
+|------|------|---------|
+| **LLM** | Moonshot Kimi K2 | 云端 API，无需本地 GPU |
+| **RAG** | LlamaIndex | CPU 运行 |
+| **向量库** | ChromaDB | CPU 运行 |
+| **代码解析** | Tree-sitter (C grammar) | CPU 运行 |
+| **PDF 解析** | PyMuPDF + pdfplumber | CPU 运行 |
+| **嵌入模型** | BGE-large / MiniLM | **支持 CPU** |
+| **Web UI** | Streamlit / Gradio | CPU 运行 |
+| **API** | FastAPI | CPU 运行 |
+
+✅ **所有组件都支持纯 CPU 运行，无需 GPU 即可部署！**
+
+### 🚀 纯 CPU 快速开始 (5 分钟)
+
+```bash
+# 1. 克隆并安装
+git clone https://github.com/your-username/pg-source-qa.git
+cd pg-source-qa
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# 2. 配置 API Key
+cp .kimi.toml.example .kimi.toml
+# 编辑 .kimi.toml，填入你的 Moonshot API Key
+
+# 3. 下载 PostgreSQL 源码并索引
+python scripts/download_postgres.py
+pg-qa index-code ./data/postgres
+
+# 4. 开始问答！
+pg-qa chat
+```
+
+详细步骤参见 [纯 CPU 快速启动指南](docs/QUICK_START_CPU.md)
+
+---
 
 ## 快速开始
 
 ### 1. 环境要求
 
+**软件:**
 - Python 3.10+
 - Git (用于下载 PostgreSQL 源码)
 - Moonshot AI API Key
+
+**硬件:**
+- **CPU**: 支持 CPU 运行，无需 GPU！
+- **最小配置**: 4核 CPU + 8GB 内存
+- **推荐配置**: 8核 CPU + 16GB 内存
+
+> 💡 **GPU 需求?** 不需要！系统默认在 CPU 上运行。GPU 只在索引阶段加速 4-10 倍，日常查询几乎无差异。详见 [CPU 部署指南](docs/CPU_DEPLOYMENT.md)
 
 ### 2. 安装
 
@@ -171,7 +206,10 @@ pg-source-qa/
 │           └── app.py
 ├── tests/                      # 测试代码
 ├── docs/                       # 项目文档
-│   └── DEVELOPMENT_PLAN.md     # 开发计划
+│   ├── CPU_DEPLOYMENT.md       # CPU 部署指南
+│   ├── DEVELOPMENT_PLAN.md     # 开发计划
+│   ├── DEPENDENCIES.md         # 依赖说明
+│   └── INDEX_COMMAND_GUIDE.md  # 索引命令详解
 ├── scripts/                    # 工具脚本
 │   ├── setup.ps1
 │   └── setup.sh
@@ -182,6 +220,20 @@ pg-source-qa/
 ├── requirements.txt
 └── README.md
 ```
+
+## 文档索引
+
+| 文档 | 说明 |
+|------|------|
+| [QUICK_START_CPU.md](docs/QUICK_START_CPU.md) | **纯 CPU 快速启动指南** - 5 分钟启动系统 |
+| [CPU_DEPLOYMENT.md](docs/CPU_DEPLOYMENT.md) | CPU 部署详细指南 - 硬件要求、性能对比、优化建议 |
+| [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) | 完整开发计划 - 架构设计、里程碑、技术选型 |
+| [DEPENDENCIES.md](docs/DEPENDENCIES.md) | 依赖库详细说明 |
+| [INDEX_COMMAND_GUIDE.md](docs/INDEX_COMMAND_GUIDE.md) | `pg-qa index-code` 命令详解 |
+| [CLI_COMMAND_GUIDE.md](docs/CLI_COMMAND_GUIDE.md) | `pg-qa` 命令生成原理详解 |
+| [GITHUB_UPLOAD_GUIDE.md](GITHUB_UPLOAD_GUIDE.md) | GitHub 上传指南 |
+
+---
 
 ## 上传到 GitHub
 

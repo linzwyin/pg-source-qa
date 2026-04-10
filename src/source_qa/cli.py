@@ -41,8 +41,8 @@ def main(
     pass
 
 
-@app.command()
-def index(
+@app.command(name="index-code")
+def index_code(
     directory: Path = typer.Argument(
         ...,
         help="Directory containing source code to index",
@@ -60,8 +60,14 @@ def index(
 ) -> None:
     """Index source code directory."""
     try:
-        qa = CodeQASystem()
-        result = qa.index_directory(str(directory), clear_existing=clear)
+        # Use CodeIndexer directly - doesn't require API key
+        from source_qa.indexer import CodeIndexer
+        
+        console.print("[bold blue]PostgreSQL Source Code Indexer[/bold blue]")
+        console.print("")
+        
+        indexer = CodeIndexer()
+        result = indexer.index_directory(str(directory), clear_existing=clear)
         
         table = Table(title="Indexing Results")
         table.add_column("Metric", style="cyan")
@@ -70,10 +76,15 @@ def index(
         for key, value in result.items():
             table.add_row(key.replace("_", " ").title(), str(value))
         
+        console.print("")
         console.print(table)
+        console.print("")
+        console.print("[green]✓ Indexing complete![/green]")
         
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
         raise typer.Exit(1)
 
 
