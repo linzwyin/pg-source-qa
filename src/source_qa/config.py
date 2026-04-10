@@ -137,12 +137,27 @@ class Settings(BaseSettings):
             return cls()
 
         config = toml.load(config_path)
+        
+        # Parse moonshot section
         moonshot_config = config.get("moonshot", {})
+        
+        # Parse embedding section
+        embedding_config = config.get("embedding", {})
+        
+        # Parse indexing section
+        indexing_config = config.get("indexing", {})
 
         return cls(
+            # Moonshot settings
             moonshot_api_key=moonshot_config.get("api_key", ""),
             moonshot_base_url=moonshot_config.get("base_url", "https://api.moonshot.cn/v1"),
             moonshot_model=moonshot_config.get("model", "kimi-k2-0711-preview"),
+            # Embedding settings
+            embedding_model=embedding_config.get("model", "sentence-transformers/all-MiniLM-L6-v2"),
+            embedding_device=embedding_config.get("device", "cpu"),
+            # Indexing settings
+            chunk_size=indexing_config.get("chunk_size", 1000),
+            chunk_overlap=indexing_config.get("chunk_overlap", 200),
         )
 
 
