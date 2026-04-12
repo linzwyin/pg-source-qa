@@ -28,6 +28,11 @@ Always cite the source files you reference in your answer."""
     def __init__(self):
         settings = get_settings()
         
+        # Debug: Check API key (masked)
+        api_key_preview = settings.moonshot_api_key[:10] + "..." if settings.moonshot_api_key else "EMPTY"
+        print(f"[QA Engine] API Key preview: {api_key_preview}")
+        print(f"[QA Engine] API Key length: {len(settings.moonshot_api_key)}")
+        
         if not settings.moonshot_api_key:
             raise ValueError(
                 "Moonshot API key not configured. "

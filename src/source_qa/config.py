@@ -136,10 +136,7 @@ class Settings(BaseSettings):
             config_path = Path(config_path).resolve()
 
         if not config_path.exists():
-            print(f"[Config] Config file not found: {config_path}")
             return cls()
-
-        print(f"[Config] Loading from: {config_path}")
         
         try:
             config = toml.load(config_path)
@@ -152,8 +149,7 @@ class Settings(BaseSettings):
         embedding_config = config.get("embedding", {})
         indexing_config = config.get("indexing", {})
         
-        print(f"[Config] Parsed sections: {list(config.keys())}")
-        print(f"[Config] embedding_config: {embedding_config}")
+
         
         # Build kwargs
         kwargs = {}
@@ -169,7 +165,7 @@ class Settings(BaseSettings):
         # Embedding settings
         if "model" in embedding_config:
             kwargs["embedding_model"] = embedding_config["model"]
-            print(f"[Config] Setting embedding_model to: {embedding_config['model']}")
+
         if "device" in embedding_config:
             kwargs["embedding_device"] = embedding_config["device"]
             
@@ -179,7 +175,7 @@ class Settings(BaseSettings):
         if "chunk_overlap" in indexing_config:
             kwargs["chunk_overlap"] = indexing_config["chunk_overlap"]
         
-        print(f"[Config] Creating Settings with kwargs: {kwargs}")
+
         
         # Create instance - note: BaseSettings may override kwargs with env vars
         instance = cls(**kwargs)
@@ -201,7 +197,7 @@ class Settings(BaseSettings):
         if "chunk_overlap" in kwargs:
             instance.chunk_overlap = kwargs["chunk_overlap"]
         
-        print(f"[Config] Created instance with embedding_model: {instance.embedding_model}")
+
         return instance
 
 
@@ -210,13 +206,18 @@ def get_settings() -> Settings:
     """Get cached settings instance."""
     settings = Settings.from_toml()
     
-    # Override with environment variables if set
-    if os.getenv("MOONSHOT_API_KEY"):
-        settings.moonshot_api_key = os.getenv("MOONSHOT_API_KEY")
-    if os.getenv("EMBEDDING_MODEL"):
-        settings.embedding_model = os.getenv("EMBEDDING_MODEL")
-    if os.getenv("EMBEDDING_DEVICE"):
-        settings.embedding_device = os.getenv("EMBEDDING_DEVICE")
+    # Override with environment variables ONLY if they have meaningful values
+    # Empty strings should not override TOML config
+    env_api_key = os.getenv("MOONSHOT_API_KEY")
+    if env_api_key and env_api_key.strip():
+        settings.moonshot_api_key = env_api_key
+        
+    env_embedding_model = os.getenv("EMBEDDING_MODEL")
+    if env_embedding_model and env_embedding_model.strip():
+        settings.embedding_model = env_embedding_model
+        
+    env_embedding_device = os.getenv("EMBEDDING_DEVICE")
+    if env_embedding_device and env_embedding_device.strip():
+        settings.embedding_device = env_embedding_device
     
-    print(f"[get_settings] Final embedding_model: {settings.embedding_model}")
     return settings
