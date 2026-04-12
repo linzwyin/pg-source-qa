@@ -123,8 +123,8 @@ all = [
 ]
 
 [project.scripts]
-pg-qa = "source_qa.cli:main"
-pg-source-qa = "source_qa.cli:main"
+pg-qa = "source_qa.cli:main_entry"
+pg-source-qa = "source_qa.cli:main_entry"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/pg-source-qa"

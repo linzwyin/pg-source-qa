@@ -35,15 +35,28 @@ class CodeIndexer:
         vector_store_path: str | None = None,
         collection_name: str | None = None,
     ):
+        import sys
+        sys.stderr.write("[DEBUG] CodeIndexer.__init__ started\n")
+        sys.stderr.flush()
+        
         settings = get_settings()
         self.vector_store_path = vector_store_path or settings.vector_store_path
         self.collection_name = collection_name or settings.collection_name
+        
+        sys.stderr.write(f"[DEBUG] Vector store: {self.vector_store_path}\n")
+        sys.stderr.flush()
         
         self.parser = CodeParser(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
         )
+        
+        sys.stderr.write("[DEBUG] Initializing embedder (this may take a while)...\n")
+        sys.stderr.flush()
         self.embedder = CodeEmbedder()
+        
+        sys.stderr.write("[DEBUG] Embedder initialized\n")
+        sys.stderr.flush()
         
         # Initialize ChromaDB
         self.client = chromadb.PersistentClient(

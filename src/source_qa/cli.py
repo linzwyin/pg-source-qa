@@ -59,14 +59,28 @@ def index_code(
     ),
 ) -> None:
     """Index source code directory."""
+    # Immediate output to diagnose if command is being invoked
+    import sys
+    sys.stderr.write("[DEBUG] Command invoked\n")
+    sys.stderr.flush()
+    
     try:
         # Use CodeIndexer directly - doesn't require API key
+        sys.stderr.write("[DEBUG] Importing CodeIndexer...\n")
+        sys.stderr.flush()
         from source_qa.indexer import CodeIndexer
+        
+        sys.stderr.write("[DEBUG] Import successful, creating indexer...\n")
+        sys.stderr.flush()
         
         console.print("[bold blue]PostgreSQL Source Code Indexer[/bold blue]")
         console.print("")
         
         indexer = CodeIndexer()
+        
+        sys.stderr.write("[DEBUG] Indexer created, starting indexing...\n")
+        sys.stderr.flush()
+        
         result = indexer.index_directory(str(directory), clear_existing=clear)
         
         table = Table(title="Indexing Results")

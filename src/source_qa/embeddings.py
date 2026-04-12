@@ -23,21 +23,30 @@ class CodeEmbedder:
     def model(self) -> SentenceTransformer:
         """Lazy loading of the embedding model."""
         if self._model is None:
+            import sys
+            sys.stderr.write(f"[DEBUG] Loading embedding model: {self.model_name}\n")
+            sys.stderr.flush()
+            
             # Check if model_name is a local path
             if self.model_name.startswith("./") or self.model_name.startswith("/") or Path(self.model_name).exists():
-                print(f"Loading local model from: {self.model_name}")
+                sys.stderr.write(f"[DEBUG] Loading local model from: {self.model_name}\n")
+                sys.stderr.flush()
                 self._model = SentenceTransformer(
                     self.model_name, 
                     device=self.device,
                     local_files_only=True
                 )
             else:
-                # Download from HuggingFace
+                sys.stderr.write(f"[DEBUG] Downloading model from HuggingFace: {self.model_name}\n")
+                sys.stderr.flush()
                 self._model = SentenceTransformer(
                     self.model_name, 
                     device=self.device,
                     local_files_only=self.local_files_only
                 )
+            
+            sys.stderr.write(f"[DEBUG] Model loaded successfully\n")
+            sys.stderr.flush()
         return self._model
 
     def embed_texts(self, texts: List[str]) -> np.ndarray:
