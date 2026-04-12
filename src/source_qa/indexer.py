@@ -168,11 +168,14 @@ class CodeIndexer:
         # Phase 3: Generate embeddings and add to collection
         console.print("\n[bold cyan]Phase 3/3:[/bold cyan] Generating embeddings and indexing...")
         
-        # Optimization settings
-        batch_size = 500  # Increased from 100
-        max_workers = 4   # Parallel embedding workers
+        # Pre-load model once (avoid multi-threading issues with model loading)
+        console.print("[dim]Loading embedding model...[/dim]")
+        _ = self.embedder.model  # Force model load
         
-        # Pre-generate all IDs and metadata (avoid repeated computation)
+        # Settings
+        batch_size = 500  # Larger batches for efficiency
+        
+        # Pre-generate all IDs and metadata
         console.print("[dim]Preparing metadata...[/dim]")
         all_ids = [f"chunk_{i}" for i in range(len(all_chunks))]
         all_metadatas = [
@@ -186,20 +189,6 @@ class CodeIndexer:
             for chunk in all_chunks
         ]
         all_texts = [chunk.content for chunk in all_chunks]
-        
-        # Prepare batches
-        batches = [
-            (
-                i,
-                all_texts[i:i + batch_size],
-                all_ids[i:i + batch_size],
-                all_metadatas[i:i + batch_size],
-            )
-            for i in range(0, len(all_chunks), batch_size)
-        ]
-        
-        # Parallel embedding generation with progress
-        console.print(f"[dim]Using batch_size={batch_size}, workers={max_workers}[/dim]")
         
         with Progress(
             SpinnerColumn(),
@@ -220,41 +209,27 @@ class CodeIndexer:
             index_start = time.time()
             total_processed = 0
             
-            # Process batches with parallel embedding generation
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all embedding jobs
-                future_to_batch = {
-                    executor.submit(self.embedder.embed_texts, batch_texts): (batch_idx, batch_ids, batch_metadatas)
-                    for batch_idx, (start_idx, batch_texts, batch_ids, batch_metadatas) in enumerate(batches)
-                }
+            # Process in batches (single-threaded to avoid model reload issues)
+            for i in range(0, len(all_chunks), batch_size):
+                batch_texts = all_texts[i:i + batch_size]
+                batch_ids = all_ids[i:i + batch_size]
+                batch_metadatas = all_metadatas[i:i + batch_size]
                 
-                # Process completed embeddings as they finish
-                for future in as_completed(future_to_batch):
-                    _, batch_ids, batch_metadatas = future_to_batch[future]
-                    try:
-                        embeddings = future.result()
-                        batch_texts = [all_metadatas[int(bid.split('_')[1])]['file_path'] 
-                                       for bid in batch_ids]
-                        
-                        # Get actual texts for this batch
-                        start_idx = int(batch_ids[0].split('_')[1])
-                        batch_texts = all_texts[start_idx:start_idx + len(batch_ids)]
-                        
-                        # Add to collection
-                        self.collection.add(
-                            ids=batch_ids,
-                            embeddings=embeddings.tolist(),
-                            documents=batch_texts,
-                            metadatas=batch_metadatas,
-                        )
-                        
-                        total_processed += len(batch_ids)
-                        elapsed = time.time() - index_start
-                        chunks_per_sec = total_processed / elapsed if elapsed > 0 else 0
-                        progress.update(task, completed=total_processed, chunks_per_sec=chunks_per_sec)
-                        
-                    except Exception as e:
-                        console.print(f"[red]Error processing batch: {e}[/red]")
+                # Generate embeddings
+                embeddings = self.embedder.embed_texts(batch_texts)
+                
+                # Add to collection
+                self.collection.add(
+                    ids=batch_ids,
+                    embeddings=embeddings.tolist(),
+                    documents=batch_texts,
+                    metadatas=batch_metadatas,
+                )
+                
+                total_processed += len(batch_ids)
+                elapsed = time.time() - index_start
+                chunks_per_sec = total_processed / elapsed if elapsed > 0 else 0
+                progress.update(task, completed=total_processed, chunks_per_sec=chunks_per_sec)
 
         # Final summary
         total_time = time.time() - start_time
