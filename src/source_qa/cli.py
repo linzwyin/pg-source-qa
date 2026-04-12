@@ -224,6 +224,37 @@ def stats() -> None:
         raise typer.Exit(1)
 
 
+@app.command(name="build-knowledge-graph")
+def build_knowledge_graph(
+    output: Path = typer.Option(
+        "./knowledge_graph.json",
+        "--output",
+        "-o",
+        help="Output path for knowledge graph JSON",
+    ),
+) -> None:
+    """Build knowledge graph from indexed code and docs."""
+    try:
+        from source_qa.knowledge_graph import KnowledgeGraphBuilder
+        
+        builder = KnowledgeGraphBuilder()
+        result = builder.build_graph()
+        
+        builder.print_stats()
+        
+        if result["total_edges"] > 0:
+            builder.export_graph(output)
+            console.print(f"\n[green]✓ Knowledge graph saved to {output}[/green]")
+        else:
+            console.print("\n[yellow]⚠️  No edges created. Make sure you have indexed code and docs first.[/yellow]")
+        
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        raise typer.Exit(1)
+
+
 @app.command()
 def config() -> None:
     """Show current configuration."""
