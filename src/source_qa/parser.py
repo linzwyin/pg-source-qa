@@ -69,7 +69,7 @@ class CodeParser:
     def _chunk_by_lines(
         self, content: str, file_path: str, language: str
     ) -> list[CodeChunk]:
-        """Split content into chunks based on line count."""
+        """Split content into chunks based on line count with optimizations."""
         lines = content.split("\n")
         chunks = []
         
@@ -77,25 +77,45 @@ class CodeParser:
         current_start = 0
         
         for i, line in enumerate(lines):
+            # Skip empty lines at chunk boundaries to reduce noise
+            stripped = line.strip()
+            
             current_chunk_lines.append(line)
             chunk_text = "\n".join(current_chunk_lines)
             
             if len(chunk_text) >= self.chunk_size:
-                chunks.append(
-                    CodeChunk(
-                        content=chunk_text,
-                        file_path=file_path,
-                        start_line=current_start + 1,
-                        end_line=i + 1,
-                        language=language,
+                # Clean up: remove trailing empty lines
+                while current_chunk_lines and not current_chunk_lines[-1].strip():
+                    current_chunk_lines.pop()
+                
+                if current_chunk_lines:  # Only add if there's content
+                    chunks.append(
+                        CodeChunk(
+                            content="\n".join(current_chunk_lines),
+                            file_path=file_path,
+                            start_line=current_start + 1,
+                            end_line=i + 1,
+                            language=language,
+                        )
                     )
-                )
-                # Keep overlap lines for context
-                overlap_lines = current_chunk_lines[-self.chunk_overlap // 10:]
+                
+                # Keep overlap lines for context (skip empty lines)
+                overlap_lines = []
+                overlap_count = 0
+                for l in reversed(current_chunk_lines):
+                    if overlap_count >= self.chunk_overlap // 20:  # Reduced overlap
+                        break
+                    overlap_lines.insert(0, l)
+                    if l.strip():
+                        overlap_count += 1
+                
                 current_chunk_lines = overlap_lines
                 current_start = i - len(overlap_lines) + 1
         
-        # Add remaining lines
+        # Add remaining lines (clean up trailing empty lines)
+        while current_chunk_lines and not current_chunk_lines[-1].strip():
+            current_chunk_lines.pop()
+            
         if current_chunk_lines:
             chunks.append(
                 CodeChunk(

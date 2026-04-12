@@ -172,8 +172,8 @@ class CodeIndexer:
         console.print("[dim]Loading embedding model...[/dim]")
         _ = self.embedder.model  # Force model load
         
-        # Settings
-        batch_size = 500  # Larger batches for efficiency
+        # Settings - balance between speed and memory
+        batch_size = 1000  # Larger batches reduce ChromaDB overhead
         
         # Pre-generate all IDs and metadata
         console.print("[dim]Preparing metadata...[/dim]")

@@ -43,12 +43,15 @@ class CodeEmbedder:
         if not texts:
             return np.array([])
         
-        # Normalize and encode (disable internal progress bar, we use rich)
+        # Use multi-process encoding for speed
+        # normalize_embeddings=True means L2 normalization
         embeddings = self.model.encode(
             texts,
             convert_to_numpy=True,
             normalize_embeddings=True,
             show_progress_bar=False,
+            batch_size=128,  # Optimal for all-MiniLM-L6-v2
+            num_proc=None,   # Use all available cores for tokenization
         )
         return embeddings
 

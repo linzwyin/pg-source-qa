@@ -61,12 +61,12 @@ class Settings(BaseSettings):
 
     # Indexing Configuration
     chunk_size: int = Field(
-        default=1000,
+        default=3000,  # Increased from 1000 for large codebases
         description="Maximum chunk size for code splitting",
         alias="CHUNK_SIZE",
     )
     chunk_overlap: int = Field(
-        default=200,
+        default=100,  # Reduced from 200
         description="Overlap between chunks",
         alias="CHUNK_OVERLAP",
     )
