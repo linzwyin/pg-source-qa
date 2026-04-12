@@ -131,7 +131,6 @@ class Settings(BaseSettings):
         import toml
 
         if config_path is None:
-            # Try to find .kimi.toml in current directory or parent directories
             config_path = Path(".kimi.toml").resolve()
         else:
             config_path = Path(config_path).resolve()
@@ -141,40 +140,83 @@ class Settings(BaseSettings):
             return cls()
 
         print(f"[Config] Loading from: {config_path}")
-        config = toml.load(config_path)
         
-        # Parse moonshot section
+        try:
+            config = toml.load(config_path)
+        except Exception as e:
+            print(f"[Config] Error parsing TOML: {e}")
+            return cls()
+        
+        # Parse sections
         moonshot_config = config.get("moonshot", {})
-        
-        # Parse embedding section
         embedding_config = config.get("embedding", {})
-        print(f"[Config] Embedding config: {embedding_config}")
-        
-        # Parse indexing section
         indexing_config = config.get("indexing", {})
-
-        return cls(
-            # Moonshot settings
-            moonshot_api_key=moonshot_config.get("api_key", ""),
-            moonshot_base_url=moonshot_config.get("base_url", "https://api.moonshot.cn/v1"),
-            moonshot_model=moonshot_config.get("model", "kimi-k2-0711-preview"),
-            # Embedding settings
-            embedding_model=embedding_config.get("model", "sentence-transformers/all-MiniLM-L6-v2"),
-            embedding_device=embedding_config.get("device", "cpu"),
-            # Indexing settings
-            chunk_size=indexing_config.get("chunk_size", 1000),
-            chunk_overlap=indexing_config.get("chunk_overlap", 200),
-        )
+        
+        print(f"[Config] Parsed sections: {list(config.keys())}")
+        print(f"[Config] embedding_config: {embedding_config}")
+        
+        # Build kwargs
+        kwargs = {}
+        
+        # Moonshot settings
+        if "api_key" in moonshot_config:
+            kwargs["moonshot_api_key"] = moonshot_config["api_key"]
+        if "base_url" in moonshot_config:
+            kwargs["moonshot_base_url"] = moonshot_config["base_url"]
+        if "model" in moonshot_config:
+            kwargs["moonshot_model"] = moonshot_config["model"]
+            
+        # Embedding settings
+        if "model" in embedding_config:
+            kwargs["embedding_model"] = embedding_config["model"]
+            print(f"[Config] Setting embedding_model to: {embedding_config['model']}")
+        if "device" in embedding_config:
+            kwargs["embedding_device"] = embedding_config["device"]
+            
+        # Indexing settings
+        if "chunk_size" in indexing_config:
+            kwargs["chunk_size"] = indexing_config["chunk_size"]
+        if "chunk_overlap" in indexing_config:
+            kwargs["chunk_overlap"] = indexing_config["chunk_overlap"]
+        
+        print(f"[Config] Creating Settings with kwargs: {kwargs}")
+        
+        # Create instance - note: BaseSettings may override kwargs with env vars
+        instance = cls(**kwargs)
+        
+        # Force override with TOML values to ensure TOML config takes priority
+        # This handles cases where env vars exist but are empty strings
+        if "moonshot_api_key" in kwargs:
+            instance.moonshot_api_key = kwargs["moonshot_api_key"]
+        if "moonshot_base_url" in kwargs:
+            instance.moonshot_base_url = kwargs["moonshot_base_url"]
+        if "moonshot_model" in kwargs:
+            instance.moonshot_model = kwargs["moonshot_model"]
+        if "embedding_model" in kwargs:
+            instance.embedding_model = kwargs["embedding_model"]
+        if "embedding_device" in kwargs:
+            instance.embedding_device = kwargs["embedding_device"]
+        if "chunk_size" in kwargs:
+            instance.chunk_size = kwargs["chunk_size"]
+        if "chunk_overlap" in kwargs:
+            instance.chunk_overlap = kwargs["chunk_overlap"]
+        
+        print(f"[Config] Created instance with embedding_model: {instance.embedding_model}")
+        return instance
 
 
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance."""
-    # Try to load from TOML first, then fall back to env vars
     settings = Settings.from_toml()
     
     # Override with environment variables if set
     if os.getenv("MOONSHOT_API_KEY"):
         settings.moonshot_api_key = os.getenv("MOONSHOT_API_KEY")
+    if os.getenv("EMBEDDING_MODEL"):
+        settings.embedding_model = os.getenv("EMBEDDING_MODEL")
+    if os.getenv("EMBEDDING_DEVICE"):
+        settings.embedding_device = os.getenv("EMBEDDING_DEVICE")
     
+    print(f"[get_settings] Final embedding_model: {settings.embedding_model}")
     return settings
