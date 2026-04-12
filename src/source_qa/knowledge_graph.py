@@ -7,6 +7,7 @@ from typing import Dict, List, Set, Tuple
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
