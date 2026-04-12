@@ -23,30 +23,19 @@ class CodeEmbedder:
     def model(self) -> SentenceTransformer:
         """Lazy loading of the embedding model."""
         if self._model is None:
-            import sys
-            sys.stderr.write(f"[DEBUG] Loading embedding model: {self.model_name}\n")
-            sys.stderr.flush()
-            
             # Check if model_name is a local path
             if self.model_name.startswith("./") or self.model_name.startswith("/") or Path(self.model_name).exists():
-                sys.stderr.write(f"[DEBUG] Loading local model from: {self.model_name}\n")
-                sys.stderr.flush()
                 self._model = SentenceTransformer(
                     self.model_name, 
                     device=self.device,
                     local_files_only=True
                 )
             else:
-                sys.stderr.write(f"[DEBUG] Downloading model from HuggingFace: {self.model_name}\n")
-                sys.stderr.flush()
                 self._model = SentenceTransformer(
                     self.model_name, 
                     device=self.device,
                     local_files_only=self.local_files_only
                 )
-            
-            sys.stderr.write(f"[DEBUG] Model loaded successfully\n")
-            sys.stderr.flush()
         return self._model
 
     def embed_texts(self, texts: List[str]) -> np.ndarray:
@@ -54,12 +43,12 @@ class CodeEmbedder:
         if not texts:
             return np.array([])
         
-        # Normalize and encode
+        # Normalize and encode (disable internal progress bar, we use rich)
         embeddings = self.model.encode(
             texts,
             convert_to_numpy=True,
             normalize_embeddings=True,
-            show_progress_bar=len(texts) > 10,
+            show_progress_bar=False,
         )
         return embeddings
 
