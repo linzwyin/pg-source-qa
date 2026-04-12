@@ -125,24 +125,36 @@ class DocIndexer:
         
         all_chunks: List[DocChunk] = []
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(complete_style="green", finished_style="bright_green"),
-            TaskProgressColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task("[cyan]Parsing PDFs...", total=len(pdf_files))
+        for pdf_path in pdf_files:
+            console.print(f"[dim]Opening: {pdf_path.name}...[/dim]")
             
-            for pdf_path in pdf_files:
-                try:
-                    with self.parser.open(pdf_path) as parser:
-                        for doc_chunk in parser.parse_document(chunk_size=pages_per_chunk):
+            try:
+                with self.parser.open(pdf_path) as parser:
+                    page_count = parser.page_count
+                    console.print(f"[dim]  Total pages: {page_count}[/dim]")
+                    
+                    # Parse with page-level progress
+                    with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        BarColumn(complete_style="green", finished_style="bright_green"),
+                        TaskProgressColumn(),
+                        console=console,
+                    ) as page_progress:
+                        page_task = page_progress.add_task(
+                            f"[cyan]Parsing {pdf_path.name}...", 
+                            total=page_count
+                        )
+                        
+                        for doc_chunk in parser.parse_document(chunk_size=pages_per_chunk, fast_mode=True):
                             all_chunks.append(doc_chunk)
-                except Exception as e:
-                    console.print(f"[red]Error parsing {pdf_path}: {e}[/red]")
-                
-                progress.advance(task)
+                            # Update progress by pages_per_chunk
+                            page_progress.advance(page_task, pages_per_chunk)
+                            
+            except Exception as e:
+                console.print(f"[red]Error parsing {pdf_path}: {e}[/red]")
+                import traceback
+                console.print(f"[dim]{traceback.format_exc()}[/dim]")
 
         if not all_chunks:
             console.print("[yellow]⚠️  No chunks generated from PDFs.[/yellow]")

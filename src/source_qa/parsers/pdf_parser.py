@@ -224,18 +224,25 @@ class PostgreSQLDocParser(PDFParser):
         text = text.replace(" }", "\n}")
         return text.strip()
     
-    def parse_page(self, page_num: int) -> DocChunk:
+    def parse_page(self, page_num: int, fast_mode: bool = True) -> DocChunk:
         """Parse a single page into a DocChunk.
         
         Args:
             page_num: Page number (0-indexed)
+            fast_mode: If True, skip slow operations like table extraction
             
         Returns:
             DocChunk with extracted content
         """
         text = self.extract_text_from_page(page_num)
-        tables = self.extract_tables_from_page(page_num)
-        code_examples = self.extract_code_examples(page_num)
+        
+        # Skip slow operations in fast mode
+        if fast_mode:
+            tables = []
+            code_examples = []
+        else:
+            tables = self.extract_tables_from_page(page_num)
+            code_examples = self.extract_code_examples(page_num)
         
         # Try to detect chapter/section from text
         chapter, section = self._detect_structure(text)
@@ -286,11 +293,12 @@ class PostgreSQLDocParser(PDFParser):
         
         return chapter, section
     
-    def parse_document(self, chunk_size: int = 5) -> Iterator[DocChunk]:
+    def parse_document(self, chunk_size: int = 5, fast_mode: bool = True) -> Iterator[DocChunk]:
         """Parse entire document into chunks.
         
         Args:
             chunk_size: Number of pages per chunk (for multi-page chunks)
+            fast_mode: If True, skip slow operations for faster parsing
             
         Yields:
             DocChunk objects
@@ -301,7 +309,7 @@ class PostgreSQLDocParser(PDFParser):
         if chunk_size == 1:
             # Single-page chunks
             for page_num in range(self.page_count):
-                yield self.parse_page(page_num)
+                yield self.parse_page(page_num, fast_mode=fast_mode)
         else:
             # Multi-page chunks
             current_content = []
@@ -310,7 +318,7 @@ class PostgreSQLDocParser(PDFParser):
             start_page = 0
             
             for page_num in range(self.page_count):
-                page_chunk = self.parse_page(page_num)
+                page_chunk = self.parse_page(page_num, fast_mode=fast_mode)
                 current_content.append(page_chunk.content)
                 current_tables.extend(page_chunk.tables)
                 current_code.extend(page_chunk.code_examples)
