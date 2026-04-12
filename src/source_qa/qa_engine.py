@@ -71,9 +71,14 @@ Always cite the source files you reference in your answer."""
         if verbose:
             console.print(f"[dim]Retrieved {len(chunks)} relevant chunks[/dim]")
             for chunk in chunks:
-                console.print(
-                    f"[dim]  - {chunk.file_path} ({chunk.score:.3f})[/dim]"
-                )
+                if chunk.source_type == "code":
+                    console.print(
+                        f"[dim]  [Code] {chunk.file_path} ({chunk.score:.3f})[/dim]"
+                    )
+                else:
+                    console.print(
+                        f"[dim]  [Doc] {chunk.source} page {chunk.page_number} ({chunk.score:.3f})[/dim]"
+                    )
 
         # Format context
         context = self.retriever.format_context(chunks)
