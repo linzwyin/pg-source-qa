@@ -41,6 +41,65 @@ def main(
     pass
 
 
+@app.command(name="index-docs")
+def index_docs(
+    path: Path = typer.Argument(
+        ...,
+        help="PDF file or directory containing PDFs to index",
+        exists=True,
+        resolve_path=True,
+    ),
+    clear: bool = typer.Option(
+        False,
+        "--clear",
+        "-c",
+        help="Clear existing document index before indexing",
+    ),
+    pages_per_chunk: int = typer.Option(
+        3,
+        "--pages-per-chunk",
+        "-p",
+        help="Number of PDF pages per chunk",
+    ),
+) -> None:
+    """Index PDF documentation."""
+    # Suppress transformers logging
+    import logging
+    logging.getLogger("transformers").setLevel(logging.ERROR)
+    logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+    
+    try:
+        from source_qa.doc_indexer import DocIndexer
+        
+        console.print("[bold blue]PDF Documentation Indexer[/bold blue]")
+        console.print("")
+        
+        indexer = DocIndexer()
+        result = indexer.index_directory(
+            str(path), 
+            clear_existing=clear,
+            pages_per_chunk=pages_per_chunk,
+        )
+        
+        table = Table(title="Indexing Results")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+        
+        for key, value in result.items():
+            table.add_row(key.replace("_", " ").title(), str(value))
+        
+        console.print("")
+        console.print(table)
+        console.print("")
+        console.print("[green]✓ Document indexing complete![/green]")
+        
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        raise typer.Exit(1)
+
+
 @app.command(name="index-code")
 def index_code(
     directory: Path = typer.Argument(

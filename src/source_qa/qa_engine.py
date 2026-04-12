@@ -29,15 +29,20 @@ Always cite the source files you reference in your answer."""
         settings = get_settings()
         
         # Debug: Check API key (masked)
-        api_key_preview = settings.moonshot_api_key[:10] + "..." if settings.moonshot_api_key else "EMPTY"
+        api_key_preview = settings.moonshot_api_key[:15] + "..." if settings.moonshot_api_key else "EMPTY"
         print(f"[QA Engine] API Key preview: {api_key_preview}")
         print(f"[QA Engine] API Key length: {len(settings.moonshot_api_key)}")
+        print(f"[QA Engine] Base URL: {settings.moonshot_base_url}")
         
         if not settings.moonshot_api_key:
             raise ValueError(
                 "Moonshot API key not configured. "
                 "Set MOONSHOT_API_KEY environment variable or configure .kimi.toml"
             )
+        
+        # Validate API key format
+        if not settings.moonshot_api_key.startswith("sk-"):
+            print(f"[QA Engine] Warning: API Key doesn't start with 'sk-'")
         
         self.client = OpenAI(
             api_key=settings.moonshot_api_key,
